@@ -1,0 +1,40 @@
+import os
+import shapefile
+import psycopg2
+from shapely.geometry import shape
+
+def read_shp_file(file_path):
+    geometries = []
+    with shapefile.Reader(file_path) as reader:
+        for feature in reader.iterShapes():
+            geom = shape(feature)
+            geometries.append(geom)
+    return geometries
+
+def main():
+    # SHP dosyasını oku
+    geometries = read_shp_file('ilceler_ankara_3857.shp')
+
+    # Veritabanına bağlan
+    conn = psycopg2.connect(
+        dbname="sumeyye",
+        user="postgres",
+        password="123",
+        host="127.0.0.1",
+        port=5432
+    )
+    cursor = conn.cursor()
+
+    # SHP verilerini veritabanına aktar
+    for geom in geometries:
+        insert_query = "INSERT INTO ilceler (geom) VALUES (ST_GeomFromText(%s, 3857))"
+        cursor.execute(insert_query, (geom.wkt,))
+
+    conn.commit()
+
+    # Veritabanı bağlantısını kapat
+    cursor.close()
+    conn.close()
+
+if __name__ == "__main__":
+    main()
