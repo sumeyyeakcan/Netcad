@@ -1,0 +1,31 @@
+import psycopg2
+from shapely.geometry import Point
+
+# Bağlantı bilgilerini tanımlayın
+host = "127.0.0.1"
+port = 5432
+dbname = "sumeyye"
+user = "postgres"
+password = "123"
+
+# PostgreSQL veritabanına bağlanın
+conn = psycopg2.connect(host=host, port=port, dbname=dbname, user=user, password=password)
+
+# Eczane verileri ve konumlarını bir diziye alın
+data = [
+    {"name":"Dulsberg-Apotheke","address":"Straßburger Straße 28","phone":"040/69 79 87 44","dist":"Hamburg","loc":"53.5809399,10.0624942"},{"name":"Pasteur-Apotheke","address":"Alsterdorfer Str. 175","phone":"040/5 13 32 66","dist":"Hamburg","loc":"53.6048603,9.9993333"},{"name":"Askanier-Apotheke","address":"Gründgensstr. 26","phone":"040/6 31 47 48","dist":"Hamburg","loc":"53.6097932,10.0587005"},{"name":"Adler-Apotheke","address":"Schulterblatt 106","phone":"040/4 39 45 90","dist":"Hamburg","loc":"53.563657,9.9605784"},{"name":"Heudorfer Apotheke am Tibarg","address":"Tibarg 21","phone":"040/58 91 72 85","dist":"Hamburg","loc":"53.6212188,9.951117"},{"name":"AEZ-Apotheke","address":"Heegbarg 3","phone":"040/6 08 74 70","dist":"Hamburg","loc":"53.6535309,10.0908594"},{"name":"Vivo-Apotheke","address":"Lüneburger Str. 18","phone":"040/76 75 57 72","dist":"Hamburg","loc":"53.4584317,9.9832762"},{"name":"Guten Tag Apotheke im real","address":"Willinghusener Weg 1","phone":"040/7 13 76 70","dist":"Oststeinbek","loc":"53.5472643,10.1532035"},{"name":"Moorbek-Apotheke","address":"Rathausallee 35-39","phone":"040/5 22 75 52","dist":"Norderstedt","loc":"53.7071166,9.989573"},{"name":"Markt-Apotheke","address":"Schulstr. 44","phone":"04105/8 20 61","dist":"Seevetal","loc":"53.3964082,10.0424669"},{"name":"Neue Osdorfer Apotheke","address":"Langelohstr. 158","phone":"040/80 66 36","dist":"Hamburg","loc":"53.572631,9.8468826"},{"name":"Elefanten-Apotheke","address":"Lohbrügger Landstraße 2-4","phone":"040/7 21 21 14","dist":"Hamburg","loc":"53.4951062,10.2060633"},{"name":"Mühlen-Apotheke","address":"Neugrabener Bahnhofstr. 33","phone":"040/7 01 50 91","dist":"Hamburg","loc":"53.4691422,9.8547376"},{"name":"Brunnen-Apotheke","address":"Hauptstr. 25","phone":"04101/20 78 00","dist":"Rellingen","loc":"53.648303,9.8300605"},{"name":"Adler-Apotheke","address":"Rathausstraße 33","phone":"04532/17 19","dist":"Bargteheide","loc":"53.7301177,10.2685806"}
+]
+
+# Verileri PostgreSQL veritabanına aktarın
+cur = conn.cursor()
+for row in data:
+    cur.execute("""INSERT INTO nobetci_eczane (eczane_adi, adres) VALUES (%s,%s);
+    """,(row["name"], row["address"]))
+
+    
+
+conn.commit()
+# PostgreSQL veritabanından çıkın
+conn.close()
+cur.close()
+#calısıyor fakat datadan geometrı uretmem
