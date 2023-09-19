@@ -1,0 +1,52 @@
+import http.client
+import psycopg2
+from shapely.geometry import Point
+import json
+
+# CollectAPI'den eczane verilerini çekmek için HTTP isteği
+conn = http.client.HTTPSConnection("api.collectapi.com")
+headers = {
+    'content-type': "application/json",
+    'authorization': "apikey 5YpECjmRgJt3iEPvMWjZfp:3OvIf8rzMdHKM12bXNuQfl"
+}
+conn.request("GET", "/germanyPharmacy/dutyPharmacy?city=hamburg", headers=headers)
+res = conn.getresponse()
+data = res.read()
+eczane_verisi = data.decode("utf-8")
+
+# JSON verisini işle
+eczaneler = []  # İşlenmiş eczane verilerini depola
+islemlenmis_veri = json.loads(eczane_verisi)
+for item in islemlenmis_veri["result"]:
+    loc = item["loc"].split(",")  # loc değerini virgülle ayır
+    lat = float(loc[0])  # latitude (enlem) değeri
+    lon = float(loc[1])  # longitude (boylam) değeri
+    
+    eczaneler.append({
+        "ad": item["name"],
+        "adres": item["address"],
+        "konum": Point(lon, lat)  # Shapely Point nesnesi oluştur
+    })
+
+# Veritabanı bağlantı bilgileri
+host = "127.0.0.1"
+port = 5432
+dbname = "sumeyye"
+kullanici = "postgres"
+parola = "123"
+
+# PostgreSQL veritabanına bağlan
+conn = psycopg2.connect(host=host, port=port, dbname=dbname, user=kullanici, password=parola)
+
+# Eczane verilerini konumlarıyla birlikte PostgreSQL'e ekleyin
+cur = conn.cursor()
+for row in eczaneler:
+    # PostgreSQL'e veriyi ekleyin
+    cur.execute("""INSERT INTO nobetci_eczane (eczane_adi, adres, konum) VALUES (%s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326));""",
+                (row["ad"], row["adres"], row["konum"].x, row["konum"].y))
+
+conn.commit()
+
+# Bağlantıları kapat
+cur.close()
+conn.close()
