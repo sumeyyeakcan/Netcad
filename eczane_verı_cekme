@@ -1,0 +1,16 @@
+import http.client
+
+conn = http.client.HTTPSConnection("api.collectapi.com")
+
+headers = {
+    'content-type': "application/json",
+    'authorization': "apikey 5YpECjmRgJt3iEPvMWjZfp:3OvIf8rzMdHKM12bXNuQfl"
+    }
+
+conn.request("GET", "/germanyPharmacy/dutyPharmacy?city=hamburg", headers=headers)
+
+res = conn.getresponse()
+data = res.read()
+
+print(data.decode("utf-8"))
+#verılerı buradan aldım
