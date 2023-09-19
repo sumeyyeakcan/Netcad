@@ -1,0 +1,18 @@
+import pandas as pd
+from geopy.geocoders import Nominatim
+
+# Excel dosyasını oku
+excel_file = 'Rvs.xlsx'  # Excel dosyanızın adını ve yolunu belirtin
+df = pd.read_excel(excel_file)
+
+
+
+# Nominatim geocode için bir kullanıcı ajanı (user agent) belirleyin
+geolocator = Nominatim(user_agent="geocoding_app")
+
+# Adres sütunu oluşturun ve koordinatları kullanarak coğrafi kodlama yapın
+df['Adres'] = df.apply(lambda row: geolocator.reverse((row['Enlem'], row['Boylam']), exactly_one=True).address if not pd.isna(row['Enlem']) and not pd.isna(row['Boylam']) else None, axis=1)
+
+# Sonuçları yeni bir Excel dosyasına kaydetmek için
+output_excel_file = 'koordinatlar_sonuc.xlsx'
+df.to_excel(output_excel_file, index=False)
