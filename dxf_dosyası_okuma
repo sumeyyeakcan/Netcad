@@ -1,0 +1,45 @@
+import ezdxf
+import psycopg2
+
+def read_dxf_file(file_path):
+    doc = ezdxf.readfile(file_path)
+    entities = doc.modelspace().query('*')  # Tüm varlıkları al
+    return entities
+
+def main():
+    # DXF dosyasını oku
+    dxf_entities = read_dxf_file('maden_sinirlari.dxf')
+
+    # Veritabanına bağlan
+    conn = psycopg2.connect(
+        dbname="sumeyye",
+        user="postgres",
+        password="123",
+        host="127.0.0.1",
+        port=5432
+    )
+    cursor = conn.cursor()
+
+    # DXF varlıklarını veritabanına aktar
+    for entity in dxf_entities:
+        entity_type = entity.dxftype()
+        
+        if entity_type == 'LINE':
+            start_point = entity.dxf.start
+            end_point = entity.dxf.end
+            x_start, y_start = start_point.x, start_point.y
+            x_end, y_end = end_point.x, end_point.y
+            
+            insert_query = "INSERT INTO geometri_tablosu (entity_type, geom) VALUES (%s, ST_MakeLine(ST_SetSRID(ST_MakePoint(%s, %s),23036), ST_SetSRID(ST_MakePoint(%s, %s), 23036)))"
+            cursor.execute(insert_query, (entity_type, x_start, y_start, x_end, y_end))
+        
+        # Burada diğer varlık türlerine göre işlemler yapabilirsiniz
+
+    conn.commit()
+
+    # Veritabanı bağlantısını kapat
+    cursor.close()
+    conn.close()
+
+if __name__ == "__main__":
+    main()
