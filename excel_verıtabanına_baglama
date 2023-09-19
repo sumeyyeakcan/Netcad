@@ -1,0 +1,31 @@
+import pandas as pd
+import psycopg2
+from shapely.geometry import Point
+
+# Excel dosyasını oku
+excel_file = 'veri.xlsx'
+df = pd.read_excel(excel_file)
+
+# Bağlantı bilgilerini tanımla
+host = "127.0.0.1"
+port = 5432
+dbname = "sumeyye"
+user = "postgres"
+password = "123"
+
+# PostgreSQL veritabanına bağlan
+conn = psycopg2.connect(host=host, port=port, dbname=dbname, user=user, password=password)
+
+# Verileri PostgreSQL veritabanına aktar
+cur = conn.cursor()
+for index, row in df.iterrows():
+    konum = Point(row['longitude'], row['latitude'])  # Excel'den alınan koordinatları Shapely Point'e dönüştür
+    cur.execute("INSERT INTO excel_veri (isim, soyisim, telefon, konum) VALUES (%s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326));",
+                (row['isim'], row['soyisim'], row['telefon'], konum.x, konum.y))
+    
+
+conn.commit()
+
+# Bağlantıyı kapat
+conn.close()
+cur.close()
