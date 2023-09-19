@@ -1,0 +1,16 @@
+import pandas as pd
+
+# Verileri içeren DataFrame'i oluşturun
+data = {
+    "isim": ["ahmet", "mehmet", "huseyin", "ozlem", "ayse"],
+    "soyisim": ["karaca", "kola", "saganak", "akcan", "yilmaz"],
+    "telefon": [5050423125, 5355624212, 5453215645, 5536524212, 5532314512],
+    "latitude": [53.571536, 53.6066917, 53.5149006, 53.4591383, 53.6818748],
+    "longitude": [10.0695327, 9.9792715, 9.9934344, 9.9814269, 9.9876982]
+}
+
+df = pd.DataFrame(data)
+
+# DataFrame'i Excel dosyasına yaz
+excel_file = 'veri.xlsx'
+df.to_excel(excel_file, index=False)
