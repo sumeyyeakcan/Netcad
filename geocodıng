@@ -1,0 +1,24 @@
+import pandas as pd
+from geopy.geocoders import Nominatim
+from geopy.extra.rate_limiter import RateLimiter
+
+# Excel dosyasını oku
+excel_file_path = 'Adress.xlsx'  # Excel dosyanızın yolunu ve adını buraya ekleyin
+df = pd.read_excel(excel_file_path)
+
+geolocator = Nominatim(user_agent="geocoding_app")
+geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
+
+# "ADDRESS" sütunundaki adresleri geokodlayın ve sonuçları yeni sütunlara ekleyin
+df['Coğrafi_Konum'] = df['ADRESS'].apply(geocode)
+
+# Geokodlama sonuçlarını ayrı sütunlara ayırın (Enlem ve Boylam)
+df['Enlem'] = df['Coğrafi_Konum'].apply(lambda loc: loc.latitude if loc else None)
+df['Boylam'] = df['Coğrafi_Konum'].apply(lambda loc: loc.longitude if loc else None)
+
+# Sonuçları görüntüleyin
+print(df)
+
+# Sonuçları yeni bir Excel dosyasına kaydedin
+output_excel_file = 'geocodıng.xlsx'
+df.to_excel(output_excel_file, index=False)
