@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Türkiye Eczaneler ve GeoServer Katmanı</title>
+   
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+</head>
+<body>
+
+    <div id="harita" style="width: 800px; height: 600px;"></div>
+
+    <script>
+        var harita = L.map('harita').setView([39.9334, 32.8597], 6); // Türkiye'nin koordinatları ve yakınlaştırma seviyesi
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(harita);
+
+       
+        var geoServerLayer = L.tileLayer.wms('http://localhost:8080/geoserver/eczane/wms?', {
+            layers: 'eczane:adana',
+            format: 'image/png',
+            transparent: true,
+            crs: L.CRS.EPSG3857, // Harita projeksiyonu
+        }).addTo(harita);
+
+        var eczaneler = [
+          
+        ];
+
+        eczaneler.forEach(eczane => {
+            var marker = L.marker([eczane.latitude, eczane.longitude]).addTo(harita);
+            marker.bindPopup("<b>" + eczane.name + "</b><br>Adres: " + eczane.address);
+        });
+    </script>
+</body>
+</html>
