@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Türkiye Eczaneler</title>
+   
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.3.4/leaflet-routing-machine.js"></script>
+    <style>
+        /* CSS stil eklemeleri buraya gelebilir */
+        #harita {
+            width: 100%;
+            height: 400px;
+        }
+        #eczaneler-listesi {
+            margin-top: 20px;
+        }
+        .eczane {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Türkiye Eczaneler</h1>
+        <select id="dilSecimi">
+            <option value="tr">Türkçe</option>
+            <option value="en">English</option>
+        </select>
+    </header>
+
+    <div id="harita"></div>
+    <div id="arama">
+        <input type="text" id="eczaneArama" placeholder="Eczane Ara...">
+        <button onclick="araEczane()">Ara</button>
+    </div>
+
+    <div id="filtreleme">
+        <h3>Kategorilere Göre Filtrele</h3>
+        <select id="kategoriFiltresi">
+            <option value="tum">Tümü</option>
+            <option value="acik">Açık Eczaneler</option>
+            <option value="gece">Gece Nöbetçi Eczaneler</option>
+            <!-- Diğer kategori seçeneklerini buraya ekleyebilirsiniz -->
+        </select>
+        <button onclick="filtreleEczane()">Filtrele</button>
+    </div>
+
+    <div id="eczaneler-listesi">
+        <!-- Eczane bilgileri buraya eklenir. JavaScript ile dinamik olarak oluşturabilirsiniz. -->
+    </div>
+
+    <div id="eczane-ekleme">
+        <h3>Eczane Ekle</h3>
+        <form id="eczaneEklemeFormu">
+            <label for="eczaneAdi">Eczane Adı:</label>
+            <input type="text" id="eczaneAdi" name="eczaneAdi" required><br><br>
+
+            <label for="eczaneAdresi">Eczane Adresi:</label>
+            <input type="text" id="eczaneAdresi" name="eczaneAdresi" required><br><br>
+
+            <label for="eczaneKategorisi">Eczane Kategorisi:</label>
+            <select id="eczaneKategorisi" name="eczaneKategorisi">
+                <option value="acik">Açık Eczane</option>
+                <option value="gece">Gece Nöbetçi Eczane</option>
+                <!-- Diğer kategori seçeneklerini buraya ekleyebilirsiniz -->
+            </select><br><br>
+
+            <label for="eczaneLat">Enlem Koordinatı:</label>
+            <input type="text" id="eczaneLat" name="eczaneLat" required><br><br>
+
+            <label for="eczaneLng">Boylam Koordinatı:</label>
+            <input type="text" id="eczaneLng" name="eczaneLng" required><br><br>
+
+            <button type="button" onclick="ekleEczane()">Eczane Ekle</button>
+        </form>
+    </div>
+
+    <footer>
+        <p>İletişim Bilgileri</p>
+        <p>Adres: Örnek Mahallesi, Örnek Sokak 123, Örnek Şehir</p>
+        <p>Telefon: 555-555-5555</p>
+        <p>E-posta: info@ornek.com</p>
+    </footer>
+
+    <script>
+        var harita = L.map('harita').setView([39.9334, 32.8597], 6); // Türkiye'nin koordinatları ve yakınlaştırma seviyesi
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> katkılarıyla'
+        }).addTo(harita);
+
+        // Altlık harita ekleme
+        var altlikHaritalar = {
+            "Standart Harita": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> katkılarıyla'
+            }),
+            "Siyah-Beyaz Harita": L.tileLayer('https://tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> katkılarıyla'
+            }),
+            "TopoMap": L.tileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png', {
+                maxZoom: 17,
+                attribution: '© <a href="https://opentopomap.org/about">OpenTopMap</a> katkılarıyla'
+            })
+        };
+
+        L.control.layers(altlikHaritalar).addTo(harita);
+
+        // Eczaneleri eklemek için bir grup oluştur
+        var eczaneGrubu = L.layerGroup().addTo(harita);
+
+        var eczaneler = [
+            {
+                ad: "Sağlık Eczanesi",
+                enlem: 39.9334,
+                boylam: 32.8597,
+                adres: "Örnektepe Mahallesi, Örnek Sokak 123, Ankara"
+            },
+            {
+                ad: "İstanbul Eczanesi",
+                enlem: 41.0082,
+                boylam: 28.9784,
+                adres: "Levent Mahallesi, Başka Sokak 456, İstanbul"
+            },
+            {
+                ad: "Ankara Eczanesi",
+                enlem: 39.9208,
+                boylam: 32.8541,
+                adres: "Kızılay Mahallesi, Özgürlük Caddesi 789, Ankara"
+            },
+            {
+                ad: "İzmir Eczanesi",
+                enlem: 38.4192,
+                boylam: 27.1287,
+                adres: "Göztepe Mahallesi, Başka Bir Sokak 789, İzmir"
+            },
+            {
+                ad: "Antalya Eczanesi",
+                enlem: 36.8903,
+                boylam: 30.7056,
+                adres: "Konyaaltı Mahallesi, Başka Yer 101, Antalya"
+            },
+            {
+                ad: "Adana Eczanesi",
+                enlem: 37.0000,
+                boylam: 35.3213,
+                adres: "Seyhan Mahallesi, Başka Bir Yer 202, Adana"
+            },
+            {
+                ad: "Bursa Eczanesi",
+                enlem: 40.1826,
+                boylam: 29.0660,
+                adres: "Osmangazi Mahallesi, Bursa Caddesi 123, Bursa"
+            },
+            {
+                ad: "Trabzon Eczanesi",
+                enlem: 41.0054,
+                boylam: 39.7264,
+                adres: "Ortahisar Mahallesi, Sahil Yolu 456, Trabzon"
+            },
+            {
+                ad: "Eskişehir Eczanesi",
+                enlem: 39.7843,
+                boylam: 30.5192,
+                adres: "Tepebaşı Mahallesi, İnönü Caddesi 789, Eskişehir"
+            },
+            {
+                ad: "Gaziantep Eczanesi",
+                enlem: 37.0662,
+                boylam: 37.3833,
+                adres: "Şahinbey Mahallesi, Gaziantep Caddesi 101, Gaziantep"
+            }
+        ];
+
+        eczaneler.forEach(function (eczane) {
+            var marker = L.marker([eczane.enlem, eczane.boylam]).addTo(eczaneGrubu);
+            marker.bindPopup("<b>" + eczane.ad + "</b><br>Adres: " + eczane.adres);
+        });
+
+        // Yol tarifi kontrolü
+        var control = L.Routing.control({
+            waypoints: [
+                L.latLng(39.9334, 32.8597), // Başlangıç noktası
+                L.latLng(41.0082, 28.9784)  // Hedef noktası (örnek olarak İstanbul)
+            ],
+            routeWhileDragging: true,
+            geocoder: L.Control.Geocoder.nominatim()
+        }).addTo(harita);
+
+        // Yol tarifi kontrolünü kapatın
+        control.hide();
+        
+        // Eczaneleri göstermek veya gizlemek için bir kontrol ekle
+        var eczaneKontrol = L.control({
+            position: 'topleft'
+        });
+
+        eczaneKontrol.onAdd = function (harita) {
+            var div = L.DomUtil.create('div', 'info');
+            div.innerHTML = '<h4>Eczaneleri Göster/Gizle</h4>';
+            L.DomEvent.on(div, 'click', function () {
+                if (harita.hasLayer(eczaneGrubu)) {
+                    harita.removeLayer(eczaneGrubu);
+                } else {
+                    harita.addLayer(eczaneGrubu);
+                }
+            });
+            return div;
+        };
+
+        eczaneKontrol.addTo(harita);
+
+        function araEczane() {
+            var aramaMetni = document.getElementById("eczaneArama").value.toLowerCase();
+
+            document.getElementById("eczaneler-listesi").innerHTML = "";
+
+            eczaneler.forEach(function (eczane) {
+                var eczaneAdi = eczane.ad.toLowerCase();
+                var eczaneAdresi = eczane.adres.toLowerCase();
+
+                if (eczaneAdi.includes(aramaMetni) || eczaneAdresi.includes(aramaMetni)) {
+                    var eczaneBilgisi = document.createElement("div");
+                    eczaneBilgisi.className = "eczane";
+                    eczaneBilgisi.innerHTML = "<b>" + eczane.ad + "</b><br>Adres: " + eczane.adres;
+
+                    document.getElementById("eczaneler-listesi").appendChild(eczaneBilgisi);
+                }
+            });
+        }
+
+        function ekleEczane() {
+            var eczaneAdi = document.getElementById("eczaneAdi").value;
+            var eczaneAdresi = document.getElementById("eczaneAdresi").value;
+            var eczaneKategorisi = document.getElementById("eczaneKategorisi").value;
+            var eczaneLat = parseFloat(document.getElementById("eczaneLat").value);
+            var eczaneLng = parseFloat(document.getElementById("eczaneLng").value);
+
+            // Yeni eczane nesnesini oluşturun
+            var yeniEczane = {
+                ad: eczaneAdi,
+                enlem: eczaneLat,
+                boylam: eczaneLng,
+                adres: eczaneAdresi
+            };
+
+            // Yeni eczane marker'ını haritaya ekleyin
+            var marker = L.marker([eczaneLat, eczaneLng]).addTo(eczaneGrubu);
+            marker.bindPopup("<b>" + eczaneAdi + "</b><br>Adres: " + eczaneAdresi);
+
+            // Yeni eczane bilgisini eczaneler dizisine ekleyin
+            eczaneler.push(yeniEczane);
+
+            // Formu sıfırlayın
+            document.getElementById("eczaneEklemeFormu").reset();
+        }
+
+        var dilSecimi = document.getElementById("dilSecimi");
+        dilSecimi.addEventListener("change", function () {
+            var secilenDil = dilSecimi.value;
+            // Dil değişimine göre sayfayı yeniden yükleme veya çeviri işlemleri yapabilirsiniz.
+        });
+    </script>
+</body>
+</html>
